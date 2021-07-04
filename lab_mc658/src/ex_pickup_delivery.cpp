@@ -24,11 +24,12 @@ typedef vector<DNode> DNodeVector;
 int cutcount = 0;
 
 //Change this value to the number of nodes of the instance before running the algorithm
-const int N =22;
+const int N = 12;
 
 int visited[N];
 double minValue = INT_MAX;
 double final_res = INT_MAX;
+int greedyPath[N];
 
 // Pickup_Delivery_Instance put all relevant information in one class.
 class Pickup_Delivery_Instance {
@@ -219,6 +220,149 @@ void print2DArray(double **arr, int N){
   }
 }
 
+void Lab2(Pickup_Delivery_Instance &P, double **adj, int pickup[], int delivery[], int src, int dest){
+  int curr_path[P.nnodes];
+
+  //Build a initial path with all pickups nodes followed by all delivery nodes 
+  // curr_path[0] = src;
+  // int aux = 1;
+  
+  // for(int i=0; i<P.npairs; i++){
+  //   curr_path[aux] = pickup[i];
+  //   aux += 1;
+  // }
+  // for(int i=0; i<P.npairs; i++){
+  //   curr_path[aux] = delivery[i];
+  //   aux += 1;
+  // }
+
+  // curr_path[P.nnodes-1] = dest;
+
+  //Build initial path with path generated from greedy heuristic
+  for(int k=0;k<P.nnodes;k++){
+    curr_path[k] = greedyPath[k];
+  }
+
+  int improve = 0;
+
+  int new_path[P.nnodes];
+
+  while(improve < 1000){
+    double best_cost = 0;
+    for(int i=0;i<P.nnodes-1;i++){
+      best_cost += adj[curr_path[i]][curr_path[i+1]];
+    }
+
+    for(int i=1; i<P.nnodes-2; i++){
+      for(int j=i+1; j<P.nnodes-1; j++){
+        //copy curr path to new_path
+        for(int k=0; k<P.nnodes; k++){
+          new_path[k] = curr_path[k];
+        }
+
+        //Swap two nodes
+        int aux = new_path[i];
+        new_path[i] = new_path[j];
+        new_path[j] = aux;
+
+        bool isInPath = false;
+        bool isDelivery = false;
+        bool isPickup = false;
+        bool isDeliveryInPath = false;
+
+        for(int n=0; n<P.npairs;n++){
+          //Check if vertice i is delivery
+          if(new_path[i] == delivery[n]){
+            isDelivery = true;
+            //Check if correspondent pickup is in path before i
+            for(int m=0;m<i;m++){
+              if(new_path[m] == pickup[n]){
+                isInPath = true;
+              }
+            }
+          }
+        }
+
+        for(int n=0; n<P.npairs;n++){
+          //Check if vertice i is pickup
+          if(new_path[i] == pickup[n]){
+            isPickup = true;
+            //Check if correspondent delivery is in path before i
+            for(int m=0;m<i;m++){
+              if(new_path[m] == delivery[n]){
+                isDeliveryInPath = true;
+              }
+            }
+          }
+        }
+
+        bool isInPath2 = false;
+        bool isDelivery2 = false;
+        bool isPickup2 = false;
+        bool isDeliveryInPath2 = false;
+
+        for(int n=0; n<P.npairs;n++){
+          //Check if vertice j is delivery
+          if(new_path[j] == delivery[n]){
+            isDelivery2 = true;
+            //Check if correspondent pickup is in path before j
+            for(int m=0;m<j;m++){
+              if(new_path[m] == pickup[n]){
+                isInPath2 = true;
+              }
+            }
+          }
+        }
+
+        for(int n=0; n<P.npairs;n++){
+          //Check if vertice i is pickup
+          if(new_path[j] == pickup[n]){
+            isPickup2 = true;
+            //Check if correspondent delivery is in path before i
+            for(int m=0;m<j;m++){
+              if(new_path[m] == delivery[n]){
+                isDeliveryInPath2 = true;
+              }
+            }
+          }
+        }
+
+        if((isDelivery == false || isInPath == true) && (isPickup == false || isDeliveryInPath == false) &&
+          (isDelivery2 == false || isInPath2 == true) && (isPickup2 == false || isDeliveryInPath2 == false)){
+          //calculates cost of new path
+          double new_cost = 0;
+          for(int l=0;l<P.nnodes-1;l++){
+            new_cost += adj[new_path[l]][new_path[l+1]];
+          }
+          if(new_cost<best_cost){
+            improve = 0;
+            for(int k=0; k<P.nnodes; k++){
+              curr_path[k] = new_path[k];
+            }
+            best_cost = new_cost;
+          }
+        }
+      }
+    }
+    improve++;
+  }
+
+    //Print initial path
+  cout<<"2-Opt Path is: ";
+  for(int i=0; i<P.nnodes; i++){
+    cout<<curr_path[i]<<" ";
+  }
+  cout<<endl;
+
+  double final_cost = 0;
+  for(int i=0;i<P.nnodes-1;i++){
+    final_cost += adj[curr_path[i]][curr_path[i+1]];
+  }
+
+  cout<<"2-Opt Final cost is: "<<final_cost<<endl;
+}
+
+
 // Function to copy temporary solution to
 // the final solution
 // add final node 
@@ -236,6 +380,20 @@ void findMinBound(double **adj, int nNodes, double curr_weight,
   if (level==nNodes-1){
     curr_weight += adj[curr_path[level-1]][dest];
     minValue = curr_weight;
+    curr_path[nNodes-1] = dest;
+
+    for(int i=0;i<nNodes;i++){
+      greedyPath[i] = curr_path[i];
+    }
+    
+    //Print final path
+    cout<<"Greedy Heuristic: "<<endl;
+    cout<<"Final path is: ";
+    for(int i=0; i<nNodes; i++){
+      cout<<curr_path[i]<<" ";
+    }
+    cout<<endl;
+    cout<<"Total cost is: "<<curr_weight<<endl;
     return;
   }
 
@@ -251,6 +409,7 @@ void findMinBound(double **adj, int nNodes, double curr_weight,
     //Finds min node candidate
     index = -1;
     double minCost = INT_MAX;
+
     for(int i=0; i<nNodes;i++){
       if(visited[i] == true || minVisited[i] == true || adj[level-1][i] == 0){
         continue;
@@ -293,13 +452,12 @@ void findMinBound(double **adj, int nNodes, double curr_weight,
 
   findMinBound(adj, nNodes, curr_weight, level+1,
   curr_path, index, dest, pickup, delivery, nPairs);
-
 }
 
 
 
-//Function that finds minimum cost path with pickup-delivey rule
-void findPathRec(double **adj, int nNodes, double curr_bound, double curr_weight,
+//Branch and Bound function that finds minimum cost path with pickup-delivey rule
+void BranchAndBound(double **adj, int nNodes, double curr_bound, double curr_weight,
 			int level, int curr_path[], int final_path[], int src, int dest, int pickup[], int delivery[], int nPairs, double lower_bound)
 {
   //Base case when we have already covered all levels of
@@ -361,7 +519,7 @@ void findPathRec(double **adj, int nNodes, double curr_bound, double curr_weight
 				visited[i] = true;
 				visited[dest] = true;
 				
-				findPathRec(adj, nNodes, curr_bound, curr_weight, level+1,
+				BranchAndBound(adj, nNodes, curr_bound, curr_weight, level+1,
 					curr_path, final_path, src, dest, pickup, delivery, nPairs, lower_bound);
 			}
 			//Reset changes to curr_weight and curr_bound
@@ -372,9 +530,7 @@ void findPathRec(double **adj, int nNodes, double curr_bound, double curr_weight
 			for (int j=0; j<=level-1; j++){
 				visited[curr_path[j]] = true;
       }
-		} else {
-      cutcount += 1;
-    }
+		}
 	}
 }
 
@@ -428,7 +584,7 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
     Dist[v_i][v_j] = P.weight[a];
   }
 
-  //Uncomment these lines to print distance matrix
+  // Uncomment these lines to print distance matrix
   // cout<<"Matriz de Distâncias"<<endl;
   // print2DArray(Dist, P.nnodes);
 
@@ -449,6 +605,7 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
   for(int i=0; i<P.npairs; i++){
     cout<<"\t"<<vPickup[i]<<" --> "<<vDelivery[i]<<endl;
   }
+  cout<<endl<<endl;
 
 //*---------------------------------------------------*/
 
@@ -469,27 +626,19 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
   visited[dest] = true;
 	curr_path[0] = src;
 
-  double lower_bound_1 = Dist[src][vPickup[0]];
+  memset(greedyPath, -1, sizeof(greedyPath));
 
-  for(int i=1; i<P.npairs; i++){
-    lower_bound_1 += Dist[vPickup[i-1]][i];
-  }
-
-  lower_bound_1 += Dist[vPickup[P.npairs-1]][vDelivery[0]];
-
-  for(int i=1; i<P.npairs; i++){
-    lower_bound_1 += Dist[vDelivery[i-1]][i];
-  }
-
-  lower_bound_1 += Dist[vDelivery[P.npairs-1]][dest];
-
+  //Execute solution with greedy approach that looks for least cost edges
+  clock_t greedyHeuristicTimer= clock();
   findMinBound(Dist, P.nnodes, 0.0, 1, curr_path, src, dest, vPickup, vDelivery, P.npairs);
+  printf("Time taken: %.5fs\n", (double)(clock() - greedyHeuristicTimer)/CLOCKS_PER_SEC);
 
-  double lower_bound_2 = minValue;
+  //2-opt Heuristic
+  clock_t optHeuristicTimer = clock();
+  Lab2(P, Dist, vPickup, vDelivery, src, dest);
+  printf("Time taken: %.5fs\n", (double)(clock() - optHeuristicTimer)/CLOCKS_PER_SEC);
 
-  double lower_bound = min(lower_bound_1, lower_bound_2);
-
-  cout<<"Limitante = "<<lower_bound<<endl;
+  double lower_bound = minValue;
 
   memset(curr_path, -1, sizeof(curr_path));
 	memset(visited, 0, sizeof(visited));
@@ -497,10 +646,12 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
   visited[dest] = true;
 	curr_path[0] = src;
 
-  findPathRec(Dist, P.nnodes, curr_bound, 0, 1, curr_path, final_path, 
+  BranchAndBound(Dist, P.nnodes, curr_bound, 0, 1, curr_path, final_path, 
               src, dest, vPickup, vDelivery, P.npairs, lower_bound);
 
   //Print final cost and path
+  cout<<endl<<endl;
+  cout<<"Branch and Bound"<<endl;
   cout<<"Menor custo: "<<final_res<<endl;
 	cout<<"Caminho percorrido: "<<endl;
 	for (int i=0; i<P.nnodes-1; i++)
@@ -508,14 +659,13 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
   cout<<final_path[P.nnodes-1]<<endl;
 
   printf("Time taken: %.5fs\n", (double)(clock() - timeBegin)/CLOCKS_PER_SEC);
-  // cout<<"Cut count is "<<cutcount<<endl;
+  cout<<endl;
 
     //Delete 2d array created
   for (int i = 0; i < P.nnodes; i++) //To delete the inner arrays
     delete[] Dist[i];
   delete[] Dist;
 
-  // Apague a chamada abaixo e escreva a codificacao da sua rotina relativa ao Laboratorio 1.
   return(1);
 }
 
