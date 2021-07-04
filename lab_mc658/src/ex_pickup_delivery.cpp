@@ -78,14 +78,14 @@ void PrintInstanceInfo(Pickup_Delivery_Instance &P)
   cout << "Pickup Delivery Graph Informations" << endl;
   cout << "\tTotal de nos: "<< P.nnodes << endl;
   cout << "\tTotal de pares: "<< P.npairs << endl;
-  cout << "\tSource = " << P.vname[P.source] << endl;
-  cout << "\tTarget = " << P.vname[P.target] << endl;
-  for (int i=0;i<P.npairs;i++) {
-    cout << "\tPair pickup-->delivery: "
-	 << P.vname[P.pickup[i]]
-	 << " --> "
-	 << P.vname[P.delivery[i]] << endl;
-  }
+  // cout << "\tSource = " << P.vname[P.source] << endl;
+  // cout << "\tTarget = " << P.vname[P.target] << endl;
+  // for (int i=0;i<P.npairs;i++) {
+  //   cout << "\tPair pickup-->delivery: "
+	//  << P.vname[P.pickup[i]]
+	//  << " --> "
+	//  << P.vname[P.delivery[i]] << endl;
+  // }
 
   // cout << "Impressao do grafo no formato (no_origem, no_destino, peso_arco)"<< endl;
   // for(DNodeIt v(P.g);v!=INVALID;++v) {
@@ -98,7 +98,7 @@ void PrintInstanceInfo(Pickup_Delivery_Instance &P)
   //   cout<<endl;
   // }
 
-  cout<<endl<<endl;
+  // cout<<endl<<endl;
 }
 
 void PrintSolution(Pickup_Delivery_Instance &P,DNodeVector &Sol,string msg)
@@ -316,10 +316,8 @@ void findPathRec(double **adj, int nNodes, double curr_bound, double curr_weight
 		//Update final result is current one is better
 		if (curr_res < final_res && curr_res < lower_bound)
 		{
-      cout<<"YOU MAKE STRAY KIDS STAY"<<endl;
 			copyToFinal(curr_path, final_path, nNodes, dest);
 			final_res = curr_res;
-      cout<<"CUURENT WEGHT IS "<<final_res<<endl;
 		}
 		return;
 	}
@@ -352,31 +350,24 @@ void findPathRec(double **adj, int nNodes, double curr_bound, double curr_weight
 		if (adj[curr_path[level-1]][i] != 0 &&
 			visited[i] == false && (indexDelivery == -1 || isInputInPath == true))
 		{
-			// float temp = curr_bound;
-
 			curr_weight += adj[curr_path[level-1]][i];
-      // cout<<"curr weight "<<curr_weight<<endl;
 
       double naive_bound = nNodes * curr_weight / level;
-      // cout<<"SHES SO NAIVE "<<naive_bound<<endl;
 
-			// Explore the node futher
+			//Explore the node futher
 			if (curr_weight < final_res && naive_bound < lower_bound)
 			{
 				curr_path[level] = i;
 				visited[i] = true;
 				visited[dest] = true;
 				
-				// call TSPRec for the next level
 				findPathRec(adj, nNodes, curr_bound, curr_weight, level+1,
 					curr_path, final_path, src, dest, pickup, delivery, nPairs, lower_bound);
 			}
-			// Else we have to prune the node by resetting
-			// all changes to curr_weight and curr_bound
+			//Reset changes to curr_weight and curr_bound
 			curr_weight -= adj[curr_path[level-1]][i];
-			// curr_bound = temp;
 
-			// Also reset the visited array
+			//Mark only nodes in current path as visited
 			memset(visited, false, sizeof(visited));
 			for (int j=0; j<=level-1; j++){
 				visited[curr_path[j]] = true;
@@ -437,7 +428,9 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
     Dist[v_i][v_j] = P.weight[a];
   }
 
-  print2DArray(Dist, P.nnodes);
+  //Uncomment these lines to print distance matrix
+  // cout<<"Matriz de Distâncias"<<endl;
+  // print2DArray(Dist, P.nnodes);
 
   int vPickup[P.npairs];
   int vDelivery[P.npairs];
@@ -447,6 +440,14 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
   for(int i=0; i < P.npairs; i++){
     vPickup[i] = stoi(P.vname[P.pickup[i]])-1;
     vDelivery[i] = stoi(P.vname[P.delivery[i]])-1;
+  }
+
+  
+  cout<<"\tSource = "<<src<<endl;
+  cout<<"\tTarget = "<<dest<<endl;
+  cout<<"\tPares Pickup->Delivery"<<endl;
+  for(int i=0; i<P.npairs; i++){
+    cout<<"\t"<<vPickup[i]<<" --> "<<vDelivery[i]<<endl;
   }
 
 //*---------------------------------------------------*/
@@ -488,7 +489,7 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
 
   double lower_bound = min(lower_bound_1, lower_bound_2);
 
-  cout<<"LOWER BOUND IS "<<lower_bound<<endl;
+  cout<<"Limitante = "<<lower_bound<<endl;
 
   memset(curr_path, -1, sizeof(curr_path));
 	memset(visited, 0, sizeof(visited));
@@ -500,14 +501,14 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
               src, dest, vPickup, vDelivery, P.npairs, lower_bound);
 
   //Print final cost and path
-  printf("Minimum cost : %f\n", final_res);
-	printf("Path Taken : ");
-	for (int i=0; i<P.nnodes; i++)
-	  printf("%d ", final_path[i]);
-  printf("\n");
+  cout<<"Menor custo: "<<final_res<<endl;
+	cout<<"Caminho percorrido: "<<endl;
+	for (int i=0; i<P.nnodes-1; i++)
+	  cout<<final_path[i]<<" -> ";
+  cout<<final_path[P.nnodes-1]<<endl;
 
   printf("Time taken: %.5fs\n", (double)(clock() - timeBegin)/CLOCKS_PER_SEC);
-  cout<<"Cut count is "<<cutcount<<endl;
+  // cout<<"Cut count is "<<cutcount<<endl;
 
     //Delete 2d array created
   for (int i = 0; i < P.nnodes; i++) //To delete the inner arrays
@@ -515,7 +516,7 @@ bool Lab1(Pickup_Delivery_Instance &P,int time_limit,double &LB,double &UB,DNode
   delete[] Dist;
 
   // Apague a chamada abaixo e escreva a codificacao da sua rotina relativa ao Laboratorio 1.
-  return(HeuristicaConstrutivaBoba(P,time_limit,LB,UB,Sol));
+  return(1);
 }
 
 
